@@ -501,8 +501,42 @@ p {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    transition: transform 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+    transform: scale(1);
 }
 
+.hero-video-container.zoom-effect video {
+    transform: scale(1.1);
+}
+
+.slide .subheading, 
+.slide .main-heading, 
+.slide .hero-description, 
+.slide .hero-buttons {
+    opacity: 0;
+    transform: translateY(60px) scale(0.9);
+    transition: none; /* Reset for animation */
+}
+
+/* The Elastic Bounce Curve */
+@keyframes elasticPop {
+    0% {
+        opacity: 0;
+        transform: translateY(60px) scale(0.9);
+    }
+    60% {
+        transform: translateY(-10px) scale(1.02);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.slide.active .subheading { animation: elasticPop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards 0.2s; }
+.slide.active .main-heading { animation: elasticPop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards 0.4s; }
+.slide.active .hero-description { animation: elasticPop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards 0.6s; }
+.slide.active .hero-buttons { animation: elasticPop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards 0.8s; }
 .hero-overlay {
     position: absolute;
     top: 0;
@@ -560,71 +594,54 @@ p {
 }
 
 /* Hero Slider */
-/* Container must be relative for absolute children */
+/* Hero Slider Container */
 .hero-slider {
     position: relative;
     width: 100%;
-    height: 60vh; /* Adjust based on your layout */
+    min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
 }
 
+/* Base Slide State */
 .slide {
     position: absolute;
     width: 100%;
     opacity: 0;
     visibility: hidden;
-    pointer-events: none;
-    transition: opacity 0.5s ease, visibility 0.5s;
+    transition: opacity 0.6s ease;
+    z-index: 1;
 }
 
 .slide.active {
     opacity: 1;
     visibility: visible;
-    pointer-events: auto;
+    position: relative;
     z-index: 2;
 }
 
-/* --- The Bouncing Stagger Effect --- */
-
-/* 1. Subheading (First to enter) */
-.slide.active .subheading {
-    animation: bounceIn 0.8s cubic-bezier(0.68, -0.6, 0.32, 1.6) forwards;
-    animation-delay: 0.1s;
-}
-
-/* 2. Main Heading (Second) */
-.slide.active .main-heading {
-    animation: bounceIn 0.8s cubic-bezier(0.68, -0.6, 0.32, 1.6) forwards;
-    animation-delay: 0.3s;
-}
-
-/* 3. Description (Third) */
-.slide.active .hero-description {
-    animation: bounceIn 0.8s cubic-bezier(0.68, -0.6, 0.32, 1.6) forwards;
-    animation-delay: 0.5s;
-}
-
-/* 4. Buttons (Last) */
-.slide.active .hero-buttons {
-    animation: bounceIn 0.8s cubic-bezier(0.68, -0.6, 0.32, 1.6) forwards;
-    animation-delay: 0.7s;
-}
-
-/* Reset states for animation */
+/* Reset individual elements for animation */
 .slide .subheading, 
 .slide .main-heading, 
 .slide .hero-description, 
 .slide .hero-buttons {
     opacity: 0;
-    transform: translateY(40px) scale(0.9);
+    transform: translateY(50px) scale(0.9);
+    will-change: transform, opacity;
 }
 
-@keyframes bounceIn {
+/* Animation trigger when slide is active */
+.slide.active .subheading { animation: smoothBounceIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards 0.2s; }
+.slide.active .main-heading { animation: smoothBounceIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards 0.4s; }
+.slide.active .hero-description { animation: smoothBounceIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards 0.6s; }
+.slide.active .hero-buttons { animation: smoothBounceIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards 0.8s; }
+
+@keyframes smoothBounceIn {
     0% {
         opacity: 0;
-        transform: translateY(40px) scale(0.9);
+        transform: translateY(50px) scale(0.9);
     }
     100% {
         opacity: 1;
@@ -2209,43 +2226,49 @@ function initNavbar() {
 // ===================================
 function initHeroSlider() {
     const slides = document.querySelectorAll('#hero-slider .slide');
+    const videoContainer = document.querySelector('.hero-video-container');
     const prevBtn = document.getElementById('prev-slide');
     const nextBtn = document.getElementById('next-slide');
     
+    if (!slides.length) return;
+    
     let current = 0;
-    let timer;
+    let isTransitioning = false;
 
     const changeSlide = (index) => {
-        // Remove active class from all slides to reset animations
-        slides.forEach(slide => {
-            slide.classList.remove('active');
-        });
+        if (isTransitioning) return;
+        isTransitioning = true;
 
+        // 1. Remove active class from current slide
+        slides[current].classList.remove('active');
+
+        // 2. Calculate next index
         current = (index + slides.length) % slides.length;
-        
-        // Use a tiny timeout to ensure the browser registers the removal/addition
-        // This triggers the CSS animations again
+
+        // 3. Force a "Reflow" and re-add class to trigger animations
         setTimeout(() => {
             slides[current].classList.add('active');
-        }, 20);
+            // Allow next click after the longest animation (0.8s) + delay (0.8s)
+            setTimeout(() => { isTransitioning = false; }, 1200);
+        }, 50); 
     };
 
-    const startTimer = () => {
-        clearInterval(timer);
-        timer = setInterval(() => changeSlide(current + 1), 6000);
-    };
-
-    nextBtn?.addEventListener('click', () => {
+    nextBtn?.addEventListener('click', (e) => {
+        e.preventDefault();
         changeSlide(current + 1);
-        startTimer();
     });
 
-    prevBtn?.addEventListener('click', () => {
+    prevBtn?.addEventListener('click', (e) => {
+        e.preventDefault();
         changeSlide(current - 1);
-        startTimer();
     });
 
-    startTimer();
+    // Auto-play (Optional)
+    setInterval(() => {
+        if (!isTransitioning) changeSlide(current + 1);
+    }, 6000);
+
+    
 }
 
 // ===================================
