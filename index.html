@@ -1115,11 +1115,13 @@ p {
 }
 
 .testimonials-slider {
-    max-width: 700px;
+    max-width: 800px;
     margin: 0 auto;
     position: relative;
     z-index: 1;
-    min-height: 250px;
+    /* Remove fixed min-height */
+    display: grid; 
+    grid-template-columns: 1fr;
 }
 
 @media (min-width: 768px) {
@@ -1129,29 +1131,28 @@ p {
 }
 
 .testimonial-item {
+    grid-area: 1 / 1 / 2 / 2; /* Stack all slides on top of each other */
     text-align: center;
-    padding: var(--space-6);
+    padding: var(--space-4);
     opacity: 0;
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    transition: all 0.5s ease;
     visibility: hidden;
+    transition: all 0.6s ease-in-out;
+    transform: translateY(10px);
 }
 
 .testimonial-item.active {
     opacity: 1;
-    position: relative;
     visibility: visible;
+    transform: translateY(0);
+    position: relative; /* This allows the container to calculate height based on the active slide */
 }
 
 .testimonial-item p {
-    font-size: clamp(1rem, 2.5vw, 1.25rem);
+    font-size: clamp(0.95rem, 4vw, 1.25rem); /* Adjusted for better mobile scaling */
     color: var(--white);
     font-style: italic;
     margin-bottom: var(--space-6);
-    line-height: 1.8;
+    line-height: 1.6;
 }
 
 .client-name {
@@ -1169,10 +1170,9 @@ p {
 .testimonial-dots {
     display: flex;
     justify-content: center;
-    gap: var(--space-2);
-    margin-top: var(--space-6);
-    position: relative;
-    z-index: 1;
+    gap: var(--space-3);
+    margin-top: var(--space-8);
+    padding-bottom: var(--space-4);
 }
 
 .testimonial-dot {
